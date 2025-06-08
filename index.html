@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <title>Liste de Courses</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: white;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+      padding-right: 40px;
+    }
+
+    .container {
+      max-width: 400px;
+      margin: auto;
+      background: #1e1e1e;
+      padding: 20px;
+      border-radius: 2px;
+      box-shadow: 0 0 10px rgba(0, 0, 255, 0.5);
+      position: relative;
+    }
+
+    input,
+    button {
+      width: 100%;
+      padding: 10px;
+      margin: 5px 0;
+      border: none;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+
+    input {
+      background: #333;
+      color: white;
+    }
+
+    .add-button {
+      background: rgb(9, 0, 128);
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .not-found-button {
+      background: darkorange;
+      z-index: 10000;
+      color: white;
+      cursor: pointer;
+      border-radius: 10%;
+      width: 30px;
+      height: 30px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      right: 10px;
+      top: 50%;
+      margin-right: 5px;
+      position: relative;
+    }
+
+    ul {
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+
+    .item {
+      display: flex;
+      user-select: none;
+      align-items: center;
+      justify-content: space-between;
+      background: #333;
+      padding: 3px;
+      margin-top: 3px;
+      border-radius: 5px;
+      position: relative;
+      transition: transform 0.2s ease-in-out;
+      z-index: 0;
+    }
+
+    .item:active {
+      cursor: grabbing;
+    }
+
+    .dragging {
+      transform: scale(1.05);
+    }
+
+    .bought {
+      text-decoration: line-through;
+      color: grey;
+    }
+
+    .not-found {
+      background: darkred;
+      color: white;
+    }
+
+    .small-checkbox {
+      width: 25px;
+      height: 25px;
+      margin-right: 10px;
+      z-index: 10000;
+      position: relative;
+    }
+
+    .item-content {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .delete-all {
+      position: fixed;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 200px;
+      padding: 10px;
+      background: red;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .action-buttons button {
+      background: rgb(9, 0, 128);
+      color: white;
+      cursor: pointer;
+      padding: 10px;
+      margin: 5px 0;
+    }
+
+    .action-buttons {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .title-container {
+      position: relative;
+    }
+
+    .title-container h2 {
+      display: inline-block;
+      margin: 0;
+      padding-left: 35px;
+    }
+
+    .options-button {
+      z-index: 555555;
+      background: #0e11c5;
+      color: white;
+      font-size: 14px;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s;
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      text-align: center;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .options-button:active {
+      background: rgb(68, 134, 255);
+    }
+
+    .options-button:hover {
+      background: #00007f;
+    }
+
+    .options-menu {
+      display: none;
+      z-index: 55555;
+      position: absolute;
+      top: 50px;
+      right: 20px;
+      background-color: #1e1e1e;
+      padding: 10px;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0, 0, 255, 0.5);
+    }
+
+    .delete-item {
+      background: red;
+      color: white;
+      border: none;
+      border-radius: 10%;
+      width: 30px;
+      height: 30px;
+      cursor: pointer;
+      top: 5%;
+      right: 10px;
+      display: flex;
+      text-align: center;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      position: relative;
+    }
+  </style>
+  <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0e11c5">
+
+</head>
+<body>
+  <button class="options-button" onclick="toggleOptionsMenu()">⚙️</button>
+  <div class="container">
+    <div class="title-container">
+      <h2>Liste de Courses</h2>
+    </div>
+    <input type="text" id="item" placeholder="Nom de l'article">
+    <button class="add-button" onclick="addItem()">Ajouter</button>
+    <ul id="list"></ul>
+
+    <div class="options-menu" id="optionsMenu">
+      <div class="action-buttons">
+        <button onclick="downloadList()">Télécharger en .txt</button>
+        <button onclick="printList()">Imprimer</button>
+        <button onclick="shareList()">Partager</button>
+        <button onclick="clearList()">Supprimer la liste</button>
+        <input type="file" id="fileInput" style="display: none;" onchange="loadFile(event)">
+        <button onclick="document.getElementById('fileInput').click()">Charger un fichier .txt</button>
+      </div>
+    </div>
+  </div>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./service-worker.js')
+      .then(() => console.log('Service Worker enregistré avec succès.'))
+      .catch(error => console.log('Échec de l\'enregistrement du Service Worker :', error));
+  }
+</script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", loadList);
+
+    function toggleOptionsMenu() {
+      const menu = document.getElementById('optionsMenu');
+      menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function addItem() {
+      let itemName = document.getElementById("item").value;
+      if (!itemName) return;
+
+      let listItem = { name: itemName, bought: false, notFound: false };
+      let items = JSON.parse(localStorage.getItem("shoppingList")) || [];
+      items.push(listItem);
+      localStorage.setItem("shoppingList", JSON.stringify(items));
+
+      document.getElementById("item").value = "";
+      loadList();
+    }
+
+    let startY = 0;
+    let currentIndex = -1;
+    let itemsArray = [];
+    let draggedItem = null;
+
+    function loadList() {
+      let list = document.getElementById("list");
+      list.innerHTML = "";
+      itemsArray = JSON.parse(localStorage.getItem("shoppingList")) || [];
+
+      itemsArray.forEach((item, index) => {
+        let li = document.createElement("li");
+        li.className = "item";
+        li.dataset.index = index;
+        if (item.bought) li.classList.add("bought");
+        if (item.notFound) li.classList.add("not-found");
+
+        li.innerHTML = `
+          <input type="checkbox" class="small-checkbox" onclick="toggleBought(${index})" ${item.bought ? "checked" : ""}>
+          <div class="item-content">
+            <span onclick="toggleBought(${index})">${item.name}</span>
+          </div>
+          <button class="not-found-button" onclick="toggleNotFound(${index})">🚫</button>
+          <button class="delete-item" onclick="deleteItem(${index})">❌</button>
+        `;
+
+        li.addEventListener("touchstart", touchStart, { passive: false });
+        li.addEventListener("touchmove", touchMove, { passive: false });
+        li.addEventListener("touchend", touchEnd);
+
+        list.appendChild(li);
+      });
+    }
+
+    function touchStart(event) {
+      const target = event.target;
+      if (target.closest('.small-checkbox') || target.closest('.delete-item') || target.closest('.not-found-button')) return;
+      event.preventDefault();
+      draggedItem = event.target.closest(".item");
+      if (!draggedItem) return;
+      startY = event.touches[0].clientY;
+      currentIndex = Number(draggedItem.dataset.index);
+      draggedItem.classList.add("dragging");
+    }
+
+    function touchMove(event) {
+      event.preventDefault();
+      if (!draggedItem) return;
+      let touchY = event.touches[0].clientY;
+      let hoveredItem = document.elementFromPoint(event.touches[0].clientX, touchY);
+      let targetItem = hoveredItem?.closest(".item");
+      if (targetItem && targetItem !== draggedItem) {
+        let targetIndex = Number(targetItem.dataset.index);
+        if (targetIndex !== currentIndex) {
+          let movedItem = itemsArray.splice(currentIndex, 1)[0];
+          itemsArray.splice(targetIndex, 0, movedItem);
+          currentIndex = targetIndex;
+          localStorage.setItem("shoppingList", JSON.stringify(itemsArray));
+          loadList();
+        }
+      }
+    }
+
+    function touchEnd(event) {
+      if (draggedItem) draggedItem.classList.remove("dragging");
+      draggedItem = null;
+      currentIndex = -1;
+    }
+
+    function toggleBought(index) {
+      itemsArray[index].bought = !itemsArray[index].bought;
+      localStorage.setItem("shoppingList", JSON.stringify(itemsArray));
+      loadList();
+    }
+
+    function toggleNotFound(index) {
+      itemsArray[index].notFound = !itemsArray[index].notFound;
+      localStorage.setItem("shoppingList", JSON.stringify(itemsArray));
+      loadList();
+    }
+
+    function deleteItem(index) {
+      itemsArray.splice(index, 1);
+      localStorage.setItem("shoppingList", JSON.stringify(itemsArray));
+      loadList();
+    }
+
+    function clearList() {
+      let items = JSON.parse(localStorage.getItem("shoppingList")) || [];
+      const notFoundItems = items.filter(item => item.notFound);
+      if (notFoundItems.length > 0) {
+        let notFoundNames = notFoundItems.map(item => item.name).join(', ');
+        let confirmation = confirm("Les éléments suivants n'ont pas été trouvés : " + notFoundNames + "\nVoulez-vous vraiment supprimer tous les autres éléments ?");
+        if (confirmation) {
+          let remainingItems = items.filter(item => item.notFound);
+          localStorage.setItem("shoppingList", JSON.stringify(remainingItems));
+          loadList();
+        }
+      } else {
+        let confirmation = confirm("Êtes-vous sûr de vouloir supprimer toute la liste ?");
+        if (confirmation) {
+          localStorage.removeItem("shoppingList");
+          loadList();
+        }
+      }
+    }
+
+    function downloadList() {
+      let items = JSON.parse(localStorage.getItem("shoppingList")) || [];
+      let text = items.map(item => item.name).join("\n");
+      let blob = new Blob([text], { type: 'text/plain' });
+      let url = URL.createObjectURL(blob);
+      let a = document.createElement("a");
+      a.href = url;
+      a.download = "shopping-list.txt";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function printList() {
+      let items = JSON.parse(localStorage.getItem("shoppingList")) || [];
+      let printWindow = window.open('', '', 'width=800,height=600');
+      printWindow.document.write('<html><head><title>Liste de Courses</title><style>body{font-family:Arial,sans-serif;font-size:18px;padding:20px;}ul{padding-left:20px;}li{margin-bottom:10px;}h1{text-align:center;}</style></head><body>');
+      printWindow.document.write('<h1>Liste de Courses</h1><ul>');
+      items.forEach(item => {
+        printWindow.document.write(`<li><strong>${item.name}</strong></li>`);
+      });
+      printWindow.document.write('</ul></body></html>');
+      printWindow.document.close();
+      printWindow.print();
+    }
+
+    function loadFile(event) {
+      let file = event.target.files[0];
+      let reader = new FileReader();
+      reader.onload = function (e) {
+        let text = e.target.result;
+        let items = text.split('\n').map(name => ({ name: name.trim(), bought: false, notFound: false }));
+        let existingItems = JSON.parse(localStorage.getItem("shoppingList")) || [];
+        localStorage.setItem("shoppingList", JSON.stringify([...existingItems, ...items]));
+        loadList();
+      };
+      reader.readAsText(file);
+    }
+
+    function shareList() {
+      let items = JSON.parse(localStorage.getItem("shoppingList")) || [];
+      let text = items.map(item => item.name).join("\n");
+      let blob = new Blob([text], { type: 'text/plain' });
+      const siteLink = "https://lsd-nsi.github.io/liste_des_courses/";
+      if (navigator.share) {
+        navigator.share({
+          title: 'Liste de Courses',
+          text: `Voici ma liste de courses :\n\n${text}\n\nVisitez mon site : ${siteLink}`,
+          files: [new File([blob], "shopping-list.txt", { type: "text/plain" })]
+        }).catch(error => console.error('Erreur de partage', error));
+      } else {
+        alert("Le partage n'est pas supporté sur ce navigateur.");
+      }
+    }
+  </script>
+</body>
+</html>
