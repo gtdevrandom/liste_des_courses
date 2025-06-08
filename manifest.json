@@ -1,11 +1,10 @@
 {
   "name": "Liste de Courses",
   "short_name": "Courses",
-  "description": "Une application pour gérer votre liste de courses",
-  "start_url": "./index.html",
+  "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#121212",
   "theme_color": "#0e11c5",
+  "background_color": "#121212",
   "icons": [
     {
       "src": "favicon.ico",
