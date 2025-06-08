@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -76,6 +77,8 @@
 
     .item {
       display: flex;
+      -webkit-user-select: none;
+      -ms-user-select: none;
       user-select: none;
       align-items: center;
       justify-content: space-between;
@@ -87,6 +90,7 @@
       transition: transform 0.2s ease-in-out;
       z-index: 0;
     }
+
 
     .item:active {
       cursor: grabbing;
@@ -217,9 +221,12 @@
     }
   </style>
   <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0e11c5">
+  <meta name="theme-color" content="#0e11c5">
+  <meta name="msapplication-navbutton-color" content="#0e11c5">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
 </head>
+
 <body>
   <button class="options-button" onclick="toggleOptionsMenu()">⚙️</button>
   <div class="container">
@@ -241,13 +248,13 @@
       </div>
     </div>
   </div>
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./service-worker.js')
-      .then(() => console.log('Service Worker enregistré avec succès.'))
-      .catch(error => console.log('Échec de l\'enregistrement du Service Worker :', error));
-  }
-</script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./service-worker.js')
+        .then(() => console.log('Service Worker enregistré avec succès.'))
+        .catch(error => console.log('Échec de l\'enregistrement du Service Worker :', error));
+    }
+  </script>
 
   <script>
     document.addEventListener("DOMContentLoaded", loadList);
@@ -350,11 +357,13 @@
       localStorage.setItem("shoppingList", JSON.stringify(itemsArray));
       loadList();
     }
-
     function deleteItem(index) {
-      itemsArray.splice(index, 1);
-      localStorage.setItem("shoppingList", JSON.stringify(itemsArray));
-      loadList();
+      const confirmation = confirm("Es-tu sûr de vouloir supprimer cet article ?");
+      if (confirmation) {
+        itemsArray.splice(index, 1);
+        localStorage.setItem("shoppingList", JSON.stringify(itemsArray));
+        loadList();
+      }
     }
 
     function clearList() {
@@ -415,21 +424,50 @@
       reader.readAsText(file);
     }
 
-    function shareList() {
-      let items = JSON.parse(localStorage.getItem("shoppingList")) || [];
-      let text = items.map(item => item.name).join("\n");
-      let blob = new Blob([text], { type: 'text/plain' });
-      const siteLink = "https://lsd-nsi.github.io/liste_des_courses/";
-      if (navigator.share) {
-        navigator.share({
+async function shareList() {
+  try {
+    const items = JSON.parse(localStorage.getItem("shoppingList")) || [];
+    const text = items.map(item => item.name).join("\n");
+    const siteLink = "https://lsd-nsi.github.io/liste_des_courses/";
+    const shareText = `Voici ma liste de courses :\n\n${text}\n\nVisitez mon site : ${siteLink}`;
+
+    // Crée un fichier texte (optionnel)
+    const blob = new Blob([text], { type: 'text/plain' });
+    const file = new File([blob], "shopping-list.txt", { type: "text/plain" });
+
+    if (navigator.share) {
+      // Vérifie si le partage de fichiers est supporté
+      const canShareFiles = navigator.canShare && navigator.canShare({ files: [file] });
+
+      if (canShareFiles) {
+        await navigator.share({
           title: 'Liste de Courses',
-          text: `Voici ma liste de courses :\n\n${text}\n\nVisitez mon site : ${siteLink}`,
-          files: [new File([blob], "shopping-list.txt", { type: "text/plain" })]
-        }).catch(error => console.error('Erreur de partage', error));
+          text: shareText,
+          files: [file]
+        });
       } else {
-        alert("Le partage n'est pas supporté sur ce navigateur.");
+        // Partage sans fichier, juste texte + lien
+        await navigator.share({
+          title: 'Liste de Courses',
+          text: shareText
+        });
       }
+      console.log("Partage réussi !");
+    } else if (navigator.clipboard) {
+      // Fallback : copie dans le presse-papier
+      await navigator.clipboard.writeText(shareText);
+      alert("Votre liste a été copiée dans le presse-papier. Vous pouvez la coller où vous voulez !");
+    } else {
+      // Fallback ultime : prompt avec texte à copier manuellement
+      prompt("Copiez votre liste :", shareText);
     }
+  } catch (error) {
+    console.error("Erreur lors du partage :", error);
+    alert("Une erreur est survenue lors du partage. Veuillez réessayer.");
+  }
+}
+
   </script>
 </body>
+
 </html>
